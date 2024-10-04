@@ -1,0 +1,8 @@
+torch
+opencv-python
+SimpleITK
+h5py
+numpy
+scikit-learn
+tifffile
+imagecodecs
