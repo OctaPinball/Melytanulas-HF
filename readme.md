@@ -1,4 +1,4 @@
-# Project Name
+# Model Ensemble for Medical Image Segmentation
 
 ## Team Information
 
