@@ -36,8 +36,8 @@ N_test_patients  = 54 #54		# number of patients to use from the test set
 ### ----------------------------------------------------------------------------------------------------------------------------------------------
 
 # create an output folder for the images if it wasnt already created
-create_folder("UTAH Test set")
-create_folder("UTAH Test set/log")
+create_folder("preprocessed_data")
+create_folder("preprocessed_data/log")
 
 # list all the files in training and testing sets
 train_files = os.listdir("Training Set")
@@ -83,13 +83,13 @@ for i in range(N_test_patients):
 	patient_3DMRI_cavity = np.rollaxis(patient_3DMRI_cavity,0,3)
 	
 	# create an output folder for the single patient
-	create_folder(os.path.join("UTAH Test set",str(i+1)+" - "+test_files[i]))
+	create_folder(os.path.join("preprocessed_data",str(i+1)+" - "+test_files[i]))
 	
 	# create output folders for the scan and label
-	create_folder(os.path.join("UTAH Test set",str(i+1)+" - "+test_files[i],))						# folder for patient single scan
-	create_folder(os.path.join("UTAH Test set",str(i+1)+" - "+test_files[i],"data"))				# folder for data
-	create_folder(os.path.join("UTAH Test set",str(i+1)+" - "+test_files[i],"cavity"))				# folder for CAVITY labels
-	create_folder(os.path.join("UTAH Test set",str(i+1)+" - "+test_files[i],"auto segmentation"))	# folder for automatic segmentation
+	create_folder(os.path.join("preprocessed_data",str(i+1)+" - "+test_files[i],))						# folder for patient single scan
+	create_folder(os.path.join("preprocessed_data",str(i+1)+" - "+test_files[i],"data"))				# folder for data
+	create_folder(os.path.join("preprocessed_data",str(i+1)+" - "+test_files[i],"cavity"))				# folder for CAVITY labels
+	create_folder(os.path.join("preprocessed_data",str(i+1)+" - "+test_files[i],"auto segmentation"))	# folder for automatic segmentation
 	
 	for n_slice in range(patient_3DMRI_scan.shape[2]):
 	
@@ -97,8 +97,8 @@ for i in range(N_test_patients):
 		output_filename = "slice"+"{0:03}".format(n_slice+1)+".tiff"
 		
 		# write to data and label file
-		cv2.imwrite(os.path.join("UTAH Test set",str(i+1)+" - "+test_files[i],"data",output_filename),patient_3DMRI_scan[:,:,n_slice])
-		cv2.imwrite(os.path.join("UTAH Test set",str(i+1)+" - "+test_files[i],"cavity",output_filename),patient_3DMRI_cavity[:,:,n_slice]*255)
+		cv2.imwrite(os.path.join("preprocessed_data",str(i+1)+" - "+test_files[i],"data",output_filename),patient_3DMRI_scan[:,:,n_slice])
+		cv2.imwrite(os.path.join("preprocessed_data",str(i+1)+" - "+test_files[i],"cavity",output_filename),patient_3DMRI_cavity[:,:,n_slice]*255)
 
 Image,Label = np.array(Image),np.array(Label)
 
@@ -116,7 +116,7 @@ train_mean,train_sd = np.mean(Image),np.std(Image)
 Image = (Image-train_mean)/train_sd
 
 # create a HDF5 dataset
-h5f = h5py.File('UTAH Test set/Utah_Training.h5','w')
+h5f = h5py.File('preprocessed_data/TrainingSet.h5','w')
 h5f.create_dataset("image",			data=Image)
 h5f.create_dataset("label",			data=Label)
 h5f.create_dataset("train.mean",	data=train_mean)

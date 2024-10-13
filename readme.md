@@ -83,7 +83,7 @@ The final output of the preprocessing step includes:
    ```bash
    docker build -t your-image-name .
 # Step 2: Download the dataset
-Manually download the dataset using the URL provided You need to manually download the dataset using the URL provided in data/data-download.txt. After downloading, extract the contents of the zip file and place the Training Set and Testing Set folders into the data/ directory of the project. Your folder structure should look like this:
+Manually download the dataset using the URL provided in data/data-download.txt. After downloading, extract the contents of the zip file and place the Training Set and Testing Set folders into the data/ directory of the project. Your folder structure should look like this:
 
 ```
 /data
@@ -94,7 +94,7 @@ Manually download the dataset using the URL provided You need to manually downlo
 # Step 3: Run the Docker container
 Run the container with the current directory mounted, so the files are accessible inside the container:
 ```bash
-docker run -it --name your-container-name -v $(pwd):/workspace your-image-name
+docker run -it --name your-container-name -v ${PWD}:/workspace your-image-name
 ```
 
 # Step 4: Preprocess the data
