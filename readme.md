@@ -4,7 +4,7 @@
 
 - **Team Name:** `Segmentation  Faults`
 - **Team Members:**
-  - `Scholtz Bálint`, `Neptun Code`
+  - `Scholtz Bálint`, `A8O5M2`
   - `Schmieder Nándor`, `E9CLSH`
 
 ## Project Description
