@@ -12,6 +12,7 @@ import tifffile as tiff
 import sys
 
 import unet
+import baseline
 import dataset as ds
 import evaluate as eval
 import parameters as params
@@ -24,8 +25,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 ### ---------- Prepare models ----------------------------------------
-model_1_name = 'unet'
-model_2_name = ''
+model_1_name = 'baseline'
+model_2_name = 'unet'
 model_3_name = ''
 model_4_name = ''
 model_5_name = ''
@@ -33,8 +34,8 @@ all_model_name = [model_1_name, model_2_name, model_3_name, model_4_name, model_
 
 #TODO: Add models
 models = {}
-models[model_1_name] = unet.CNNModel().to(device)
-#models[model_2_name] = 
+models[model_1_name] = baseline.BaselineModel().to(device)
+models[model_2_name] = unet.CNNModel().to(device)
 #models[model_3_name] = 
 #models[model_4_name] = 
 #models[model_5_name] = 

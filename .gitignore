@@ -4,3 +4,5 @@ work/UTAH Test set
 data/Testing Set
 data/Training Set
 data/preprocessed_data
+work/__pycache__
+.idea
