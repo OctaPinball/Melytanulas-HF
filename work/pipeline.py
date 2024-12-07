@@ -11,14 +11,15 @@ import os
 import tifffile as tiff
 import sys
 
-import unet
-import baseline
-import dataset as ds
-import evaluate as eval
-import parameters as params
-import train
-import dataloader as dl
-import preprocess_data as prep
+from baseline import BaselineModel
+from dataset import HDF5Dataset
+from evaluate import predict, Score
+from parameters import DATA_PATH, FILE_PATH, LOG_PATH, VAL_SPLIT_RATIO
+from train import train
+from dataloader import CombinedDataLoader
+from preprocess_data import preprocess
+from attention_unet import AttentionUNet
+from dense_unet import DenseUNet
 
 ### ---------- Prepare device ----------------------------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -26,17 +27,17 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 ### ---------- Prepare models ----------------------------------------
 model_1_name = 'baseline'
-model_2_name = 'unet'
-model_3_name = ''
+model_2_name = 'denseUnet'
+model_3_name = 'attentionUnet'
 model_4_name = ''
 model_5_name = ''
 all_model_name = [model_1_name, model_2_name, model_3_name, model_4_name, model_5_name]
 
 #TODO: Add models
 models = {}
-models[model_1_name] = baseline.BaselineModel().to(device)
-models[model_2_name] = unet.CNNModel().to(device)
-#models[model_3_name] = 
+models[model_1_name] = BaselineModel().to(device)
+models[model_2_name] = DenseUNet().to(device)
+models[model_3_name] = AttentionUNet().to(device)
 #models[model_4_name] = 
 #models[model_5_name] = 
 
@@ -118,7 +119,7 @@ if (evaluate_all + any(evaluate_model) + any(evaluate_skip_model) + skip_all_eva
 
 #if force_preprocess:
 elif run_preprocess or not skip_preprocess:
-    prep.preprocess()
+    preprocess()
 
 
 ### ---------- Training ----------
@@ -138,9 +139,9 @@ else:
 for model in train_models:
     if model not in models.keys():
         raise Exception("Unknown model name!")
-    dataset = ds.HDF5Dataset(params.DATA_PATH, subset_size=5)
-    dataloader = dl.CombinedDataLoader(dataset, params.VAL_SPLIT_RATIO, 4)
-    train.train(models[model], dataloader, 1000, device, 5, 5, model)
+    dataset = HDF5Dataset(DATA_PATH, subset_size=5)
+    dataloader = CombinedDataLoader(dataset, VAL_SPLIT_RATIO, 4)
+    train(models[model], dataloader, 1000, device, 5, 5, model)
 
 
 ### ---------- Evaluate ----------
@@ -160,5 +161,5 @@ for model in evaluation_models:
     if model not in models.keys():
         raise Exception("Unknown model name!")
     mu, sd = dataloader.dataset.get_mean_std()
-    eval.predict(params.FILE_PATH ,models[model], mu, sd, device)
-    eval.Score(params.FILE_PATH, params.LOG_PATH)
+    predict(FILE_PATH, models[model], mu, sd, device)
+    Score(FILE_PATH, LOG_PATH)
