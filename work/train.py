@@ -11,12 +11,11 @@ import os
 import tifffile as tiff
 
 import dataloader as dl
-import parameters as params
+from parameters import FILE_PATH, LOG_PATH, MODEL_PATH
 import evaluate as eval
 
-model_number = 0
 
-def train(model, dataloader: dl.CombinedDataLoader, max_epoch: int, device, save_interval: int = None, evaluate_interval: int = None, model_name: str = None):
+def train(model, model_name: str, dataloader: dl.CombinedDataLoader, max_epoch: int, device, save_interval: int = None, evaluate_interval: int = None):
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
     criterion = nn.CrossEntropyLoss()
 
@@ -57,17 +56,12 @@ def train(model, dataloader: dl.CombinedDataLoader, max_epoch: int, device, save
 
         # Save model
         if save_interval is not None and epoch % save_interval == 0:
-            if model_name is not None:
-                name = model_name
-            else:
-                name = 'model' + model_number
-                model_number += 1
-            torch.save(model.state_dict(), os.path.join(params.LOG_PATH, f"{name}_epoch_{epoch}.pth"))
+            torch.save(model.state_dict(), os.path.join(MODEL_PATH, f"{model_name}_epoch_{epoch}.pth"))
 
         # Evaluate model
         if evaluate_interval is not None and epoch % evaluate_interval == 0:
             mu, sd = dataloader.dataset.get_mean_std()
-            eval.predict(params.FILE_PATH, model, mu, sd, device)
-            eval.Score(params.FILE_PATH, params.LOG_PATH)
+            eval.predict(FILE_PATH, model_name, model, mu, sd, device)
+            eval.Score(FILE_PATH, model_name, LOG_PATH)
 
 

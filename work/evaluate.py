@@ -10,7 +10,7 @@ import numpy as np
 import os
 import tifffile as tiff
 
-def predict(dir_path, CNN_model, mu=0, sd=1, device='cuda'):
+def predict(dir_path, CNN_model, model_name: str, mu=0, sd=1, device='cuda'):
     # Input size
     n1 = 112
 
@@ -65,9 +65,9 @@ def predict(dir_path, CNN_model, mu=0, sd=1, device='cuda'):
             Imout = np.zeros(shape=[temp.shape[0], temp.shape[1]])
             Imout[n11:n12, n11:n12] = output[n, :, :]
             output_filename = f"slice{n + 1:03}.tiff"
-            cv2.imwrite(os.path.join(dir_path, file, "auto segmentation", output_filename), np.uint8(255 * Imout))
+            cv2.imwrite(os.path.join(dir_path, file, "auto segmentation", model_name, output_filename), np.uint8(255 * Imout))
 
-def Score(dir_path, log_path):
+def Score(dir_path, model_name: str, log_path):
     # Create a txt file to write results
     with open(os.path.join(log_path, "log.txt"), "a") as f:
         f1_scores = []
@@ -77,7 +77,7 @@ def Score(dir_path, log_path):
         files.remove("Training.h5")
 
         for file in files:
-            pred_dir = os.path.join(dir_path, file, "auto segmentation")
+            pred_dir = os.path.join(dir_path, file, "auto segmentation", model_name)
             true_dir = os.path.join(dir_path, file, "cavity")
 
             # Get predicted and true masks

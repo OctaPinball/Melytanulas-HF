@@ -136,12 +136,12 @@ else:
     train_models = all_model_name
 
 
-for model in train_models:
-    if model not in models.keys():
+for model_name in train_models:
+    if model_name not in models.keys():
         raise Exception("Unknown model name!")
     dataset = HDF5Dataset(DATA_PATH, subset_size=5)
     dataloader = CombinedDataLoader(dataset, VAL_SPLIT_RATIO, 4)
-    train(models[model], dataloader, 1000, device, 5, 5, model)
+    train(models[model_name], model_name, dataloader, 1000, device, 5, 5)
 
 
 ### ---------- Evaluate ----------
@@ -157,9 +157,9 @@ elif skip_all_evaluation:
 else:
     evaluation_models = all_model_name
 
-for model in evaluation_models:
-    if model not in models.keys():
+for model_name in evaluation_models:
+    if model_name not in models.keys():
         raise Exception("Unknown model name!")
     mu, sd = dataloader.dataset.get_mean_std()
-    predict(FILE_PATH, models[model], mu, sd, device)
-    Score(FILE_PATH, LOG_PATH)
+    predict(FILE_PATH, model_name, models[model_name], mu, sd, device)
+    Score(FILE_PATH, model_name, LOG_PATH)
