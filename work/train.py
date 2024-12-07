@@ -81,7 +81,7 @@ def train(model, model_name: str, dataloader: dl.CombinedDataLoader, max_epoch: 
         if save_interval is not None and epoch % save_interval == 0:
             if not os.path.exists(MODEL_PATH):
                 os.makedirs(MODEL_PATH)
-            save_path = os.path.join(LOG_PATH, f"{model_name}_epoch_{epoch}.pth" if model_name else f"model_{epoch}.pth")
+            save_path = os.path.join(MODEL_PATH, f"{model_name}_epoch_{epoch}.pth" if model_name else f"model_{epoch}.pth")
             torch.save(model.state_dict(), save_path)
             print(f"Model saved to {save_path}")
 
