@@ -12,7 +12,7 @@ import tifffile as tiff
 
 import dataloader as dl
 from parameters import FILE_PATH, LOG_PATH, MODEL_PATH
-import evaluate as eval
+from evaluate import Score, predict
 from tqdm import tqdm  # Progress bar library
 import time
 
@@ -89,8 +89,8 @@ def train(model, model_name: str, dataloader: dl.CombinedDataLoader, max_epoch: 
         if evaluate_interval is not None and epoch % evaluate_interval == 0:
             print("Running evaluation...")
             mu, sd = dataloader.dataset.get_mean_std()
-            eval.predict(FILE_PATH, model_name, model, mu, sd, device)
-            eval.Score(FILE_PATH, model_name, LOG_PATH)
+            predict(dir_path=FILE_PATH, model_name=model_name, CNN_model=model, mu=mu, sd=sd, device=device)
+            Score(dir_path=FILE_PATH, model_name=model_name, log_path=LOG_PATH)
             print("Evaluation completed.\n")
 
     end_time = time.time()
