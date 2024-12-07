@@ -158,7 +158,7 @@ for model_name in train_models:
         raise Exception("Unknown model name!")
     dataset = HDF5Dataset(DATA_PATH, subset_size=5)
     dataloader = CombinedDataLoader(dataset, VAL_SPLIT_RATIO, 4)
-    train(model=models[model_name], model_name=model_name, dataloader=dataloader, epoch=1000, device=device, save_interval=5, evaluate_interval=5)
+    train(model=models[model_name], model_name=model_name, dataloader=dataloader, max_epoch=1000, device=device, save_interval=5, evaluate_interval=5)
 
 
 ### ---------- Evaluate ----------
@@ -178,5 +178,5 @@ for model_name in evaluation_models:
     if model_name not in models.keys():
         raise Exception("Unknown model name!")
     mu, sd = dataloader.dataset.get_mean_std()
-    predict(FILE_PATH, model_name, models[model_name], mu, sd, device)
-    Score(FILE_PATH, model_name, LOG_PATH)
+    predict(dir_path=FILE_PATH, model_name=model_name, CNN_model=models[model_name], mu=mu, sd=sd, device=device)
+    Score(dir_path=FILE_PATH, model_name=model_name, log_path=LOG_PATH)
