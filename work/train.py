@@ -13,19 +13,31 @@ import tifffile as tiff
 import dataloader as dl
 from parameters import FILE_PATH, LOG_PATH, MODEL_PATH
 import evaluate as eval
+from tqdm import tqdm  # Progress bar library
+import time
 
 
 def train(model, model_name: str, dataloader: dl.CombinedDataLoader, max_epoch: int, device, save_interval: int = None, evaluate_interval: int = None):
+    print(f"Starting training in model: {model_name}")
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
     criterion = nn.CrossEntropyLoss()
 
+    start_time = time.time()  # Start the timer
+
+    print(f"Training started on device: {device}")
+    print(f"Total epochs: {max_epoch}\n")
+
     # Training loop with validation
     for epoch in range(1, max_epoch):
+        print(f"Epoch [{epoch}/{max_epoch}]")
         model.train()
         running_loss = 0.0
+        train_loader_len = len(dataloader.train_loader)
         
         # Training
-        for images, labels in dataloader.train_loader:
+        print("Training:")
+        train_bar = tqdm(dataloader.train_loader, total=train_loader_len, desc="Train Progress", ncols=80)
+        for images, labels in train_bar:
             images, labels = images.to(device), labels.to(device)
             optimizer.zero_grad()
             outputs = model(images.permute(0, 3, 1, 2))
@@ -37,13 +49,20 @@ def train(model, model_name: str, dataloader: dl.CombinedDataLoader, max_epoch: 
             optimizer.step()
             running_loss += loss.item()
 
-        print(f"Epoch [{epoch}/{max_epoch}], Train Loss: {running_loss / len(dataloader.train_loader)}")
+            train_bar.set_postfix(Loss=f"{loss.item():.4f}")
+        
+        avg_train_loss = running_loss / train_loader_len
+        print(f"Train Loss: {avg_train_loss:.4f}")
+
         
         # Validation
         model.eval()
         val_loss = 0.0
+        val_loader_len = len(dataloader.val_loader)
+        print("\nValidation:")
+        val_bar = tqdm(dataloader.val_loader, total=val_loader_len, desc="Validation Progress", ncols=80)
         with torch.no_grad():
-            for images, labels in dataloader.val_loader:
+            for images, labels in val_bar:
                 images, labels = images.to(device), labels.to(device)
                 outputs = model(images.permute(0, 3, 1, 2))
                 
@@ -51,17 +70,27 @@ def train(model, model_name: str, dataloader: dl.CombinedDataLoader, max_epoch: 
                 labels = torch.argmax(labels, dim=-1)
                 loss = criterion(outputs, labels)
                 val_loss += loss.item()
+                val_bar.set_postfix(Loss=f"{loss.item():.4f}")
+        
+        avg_val_loss = val_loss / val_loader_len
+        print(f"Validation Loss: {avg_val_loss:.4f}\n")
         
         print(f"Epoch [{epoch}/{max_epoch}], Validation Loss: {val_loss / len(dataloader.val_loader)}")
 
         # Save model
         if save_interval is not None and epoch % save_interval == 0:
             torch.save(model.state_dict(), os.path.join(MODEL_PATH, f"{model_name}_epoch_{epoch}.pth"))
+            print(f"Model saved to {save_path}")
 
         # Evaluate model
         if evaluate_interval is not None and epoch % evaluate_interval == 0:
+            print("Running evaluation...")
             mu, sd = dataloader.dataset.get_mean_std()
             eval.predict(FILE_PATH, model_name, model, mu, sd, device)
             eval.Score(FILE_PATH, model_name, LOG_PATH)
+            print("Evaluation completed.\n")
 
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(f"Training completed in {elapsed_time // 60:.0f}m {elapsed_time % 60:.0f}s")
 

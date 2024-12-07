@@ -14,7 +14,7 @@ import sys
 from baseline import BaselineModel
 from dataset import HDF5Dataset
 from evaluate import predict, Score
-from parameters import DATA_PATH, FILE_PATH, LOG_PATH, VAL_SPLIT_RATIO
+from parameters import DATA_PATH, FILE_PATH, LOG_PATH, VAL_SPLIT_RATIO, MODEL_PATH
 from train import train
 from dataloader import CombinedDataLoader
 from preprocess_data import preprocess
@@ -43,12 +43,15 @@ models[model_3_name] = AttentionUNet().to(device)
 
 
 ### ---------- Get parameters ----------------------------------------
-all_args = ('-pf', '-ps', '-pr', '-ta', '-tm', '-tsa', '-tsm', '-ea', '-em', '-esa', '-esm')
+all_args = ('-pf', '-ps', '-pr', '-lm', '-ta', '-tm', '-tsa', '-tsm', '-ea', '-em', '-esa', '-esm')
 args = sys.argv[1:]
 
 force_preprocess = False
 skip_preprocess = False
 run_preprocess = False
+
+load_model = []
+load_queue = False
 
 train_all = False
 train_model = []
@@ -70,6 +73,7 @@ for arg in args:
         train_skip_queue = False
         evaluation_queue = False
         evaluation_skip_queue = False
+        load_queue = False
     if arg in ('-pf'):
         force_preprocess = True
         preprocess_specified = True
@@ -79,6 +83,10 @@ for arg in args:
     elif arg in ('-pr'):
         run_preprocess = True
         preprocess_specified = True
+    elif arg in ('-lm'):
+        load_queue = True
+    elif load_queue:
+        load_model.append(arg)
     elif arg in ('-ta'):
         train_all = True
     elif arg in ('-tm'):
@@ -124,6 +132,13 @@ elif run_preprocess or not skip_preprocess:
     preprocess()
 
 
+### ---------- Loading model ----------
+
+for load_name in load_model:
+    model_name = load_name.split('_')[0]
+    models[model_name].load_state_dict(torch.load(os.path.join(MODEL_PATH, f"{load_name}.pth")))
+
+
 ### ---------- Training ----------
 
 if train_skip_model:
@@ -143,7 +158,7 @@ for model_name in train_models:
         raise Exception("Unknown model name!")
     dataset = HDF5Dataset(DATA_PATH, subset_size=5)
     dataloader = CombinedDataLoader(dataset, VAL_SPLIT_RATIO, 4)
-    train(models[model_name], model_name, dataloader, 1000, device, 5, 5)
+    train(model=models[model_name], model_name=model_name, dataloader=dataloader, epoch=1000, device=device, save_interval=5, evaluate_interval=5)
 
 
 ### ---------- Evaluate ----------
