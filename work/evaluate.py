@@ -18,6 +18,7 @@ def predict(dir_path, CNN_model, model_name: str, mu=0, sd=1, device='cuda'):
     files = os.listdir(dir_path)
     files.remove("log")
     files.remove("Training.h5")
+    files.remove("model")
 
     CNN_model.eval()
 

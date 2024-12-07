@@ -14,8 +14,13 @@ def ensemble_model_outputs(
     if threshold is None:
         threshold = len(model_names) // 2 + 1
     
+    image_folders = os.listdir(base_dir)
+    image_folders.remove("log")
+    image_folders.remove("Training.h5")
+    image_folders.remove("model")
+
     # Iterate through all directories in the base path
-    for folder in os.listdir(base_dir):
+    for folder in image_folders:
         folder_path = os.path.join(base_dir, folder, "auto segmentation")
         if not os.path.isdir(folder_path):
             continue
