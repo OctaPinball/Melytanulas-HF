@@ -34,8 +34,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_1_name = 'unet'
 model_2_name = 'residualUnet'
 model_3_name = 'unetPlusplus'
-model_4_name = ''
-model_5_name = ''
+model_4_name = 'denseUnet'
+model_5_name = 'attentionUnet'
 all_model_name = [model_1_name, model_2_name, model_3_name, model_4_name, model_5_name]
 
 #TODO: Add models
@@ -43,8 +43,8 @@ models = {}
 models[model_1_name] = Unet().to(device)
 models[model_2_name] = ResidualUNet().to(device)
 models[model_3_name] = UNetPlusPlus().to(device)
-#models[model_4_name] = 
-#models[model_5_name] = 
+models[model_4_name] = DenseUNet().to(device)
+models[model_5_name] = AttentionUNet().to(device)
 
 
 ### ---------- Get parameters ----------------------------------------
@@ -147,7 +147,8 @@ if (train_all + any(train_model) + any(train_skip_model) + skip_all_train) > 1:
     raise Exception("Train type flag conflict! Use only one train type flag!")
 if (evaluate_all + any(evaluate_model) + any(evaluate_skip_model) + skip_all_evaluation) > 1:
     raise Exception("Evaluation type flag conflict! Use only one evaluation type flag")
-
+if (e_evaluate_all + any(e_evaluate_model) + any(e_evaluate_skip_model) + e_skip_all_evaluation) > 1:
+    raise Exception("Ensemble evaluation type flag conflict! Use only one ensemble evaluation type flag")
 
 ### ---------- Pipeline ----------------------------------------
 
