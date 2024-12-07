@@ -20,24 +20,28 @@ from dataloader import CombinedDataLoader
 from preprocess_data import preprocess
 from attention_unet import AttentionUNet
 from dense_unet import DenseUNet
+from unet import Unet
+from residual_unet import ResidualUNet
+from unet_plusplus import UNetPlusPlus
+
 
 ### ---------- Prepare device ----------------------------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 ### ---------- Prepare models ----------------------------------------
-model_1_name = 'baseline'
-model_2_name = 'denseUnet'
-model_3_name = 'attentionUnet'
+model_1_name = 'unet'
+model_2_name = 'residualUnet'
+model_3_name = 'unetPlusplus'
 model_4_name = ''
 model_5_name = ''
 all_model_name = [model_1_name, model_2_name, model_3_name, model_4_name, model_5_name]
 
 #TODO: Add models
 models = {}
-models[model_1_name] = BaselineModel().to(device)
-models[model_2_name] = DenseUNet().to(device)
-models[model_3_name] = AttentionUNet().to(device)
+models[model_1_name] = Unet().to(device)
+models[model_2_name] = ResidualUNet().to(device)
+models[model_3_name] = UNetPlusPlus().to(device)
 #models[model_4_name] = 
 #models[model_5_name] = 
 
@@ -158,7 +162,7 @@ for model_name in train_models:
         raise Exception("Unknown model name!")
     dataset = HDF5Dataset(DATA_PATH, subset_size=5)
     dataloader = CombinedDataLoader(dataset, VAL_SPLIT_RATIO, 4)
-    train(model=models[model_name], model_name=model_name, dataloader=dataloader, max_epoch=1000, device=device, save_interval=5, evaluate_interval=5)
+    train(model=models[model_name], model_name=model_name, dataloader=dataloader, max_epoch=6, device=device, save_interval=5, evaluate_interval=5)
 
 
 ### ---------- Evaluate ----------

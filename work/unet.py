@@ -11,9 +11,9 @@ import os
 import tifffile as tiff
 
 ### Model Definition
-class CNNModel(nn.Module):
+class Unet(nn.Module):
     def __init__(self):
-        super(CNNModel, self).__init__()
+        super(Unet, self).__init__()
 
         # Encoder
         self.enc1 = nn.Sequential(

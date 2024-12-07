@@ -78,15 +78,16 @@ def train(model, model_name: str, dataloader: dl.CombinedDataLoader, max_epoch: 
         print(f"Epoch [{epoch}/{max_epoch}], Validation Loss: {val_loss / len(dataloader.val_loader)}")
 
         # Save model
-        if save_interval is not None and epoch % save_interval == 0:
+        if save_interval is not None and (epoch+1) % save_interval == 0:
             if not os.path.exists(MODEL_PATH):
                 os.makedirs(MODEL_PATH)
+            save_path = os.path.join(MODEL_PATH, f"{model_name}_epoch_{epoch}.pth" if model_name else f"model_{epoch}.pth")
             save_path = os.path.join(MODEL_PATH, f"{model_name}_epoch_{epoch}.pth" if model_name else f"model_{epoch}.pth")
             torch.save(model.state_dict(), save_path)
             print(f"Model saved to {save_path}")
 
         # Evaluate model
-        if evaluate_interval is not None and epoch % evaluate_interval == 0:
+        if evaluate_interval is not None and (epoch+1) % evaluate_interval == 0:
             print("Running evaluation...")
             mu, sd = dataloader.dataset.get_mean_std()
             predict(dir_path=FILE_PATH, model_name=model_name, CNN_model=model, mu=mu, sd=sd, device=device)

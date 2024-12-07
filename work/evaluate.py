@@ -71,26 +71,46 @@ def predict(dir_path, CNN_model, model_name: str, mu=0, sd=1, device='cuda'):
             cv2.imwrite(os.path.join(dir_path, file, "auto segmentation", model_name, output_filename), np.uint8(255 * Imout))
 
 def Score(dir_path, model_name: str, log_path):
-    # Create a txt file to write results
-    with open(os.path.join(log_path, "log.txt"), "a") as f:
+    """
+    Evaluate segmentation performance and log F1 scores.
+
+    Args:
+        dir_path (str): Path to the directory containing test files.
+        model_name (str): Name of the model for organizing predictions.
+        log_path (str): Path to save the evaluation log.
+    """
+    print(f"Starting evaluation for model: {model_name}")
+    log_file_path = os.path.join(log_path, "log.txt")
+
+    # Create or append to the log file
+    with open(log_file_path, "a") as f:
         f1_scores = []
 
+        # List test files
         files = os.listdir(dir_path)
         files.remove("log")
         files.remove("Training.h5")
 
-        for file in files:
+        print(f"Found {len(files)} files for evaluation.")
+
+        for file_idx, file in enumerate(files, 1):
+            print(f"[{file_idx}/{len(files)}] Evaluating file: {file}")
+
             pred_dir = os.path.join(dir_path, file, "auto segmentation", model_name)
             true_dir = os.path.join(dir_path, file, "cavity")
 
-            # Get predicted and true masks
             pred = []
             true = []
-            for k in range(len(os.listdir(pred_dir))):
+
+            slice_files = os.listdir(pred_dir)
+            print(f"  Found {len(slice_files)} slices in {pred_dir}.")
+
+            # Process slices
+            for k in range(len(slice_files)):
                 pred_img_path = os.path.join(pred_dir, f"slice{k+1:03}.tiff")
                 true_img_path = os.path.join(true_dir, f"slice{k+1:03}.tiff")
 
-                # Use tifffile to open the TIFF files
+                # Read TIFF files
                 pred_img = tiff.imread(pred_img_path) // 255
                 true_img = tiff.imread(true_img_path) // 255
 
@@ -102,7 +122,15 @@ def Score(dir_path, model_name: str, log_path):
 
             # Calculate F1 score
             f1 = f1_score(true, pred, average="binary")
-            f.write(f"{file} - F1 Score: {round(f1, 3)}\n")
             f1_scores.append(f1)
 
-        f.write(f"\nOVERALL F1 AVERAGE = {np.mean(f1_scores)}\n\n")
+            # Log individual file F1 score
+            f.write(f"{file} - F1 Score: {round(f1, 3)}\n")
+            print(f"  F1 Score for {file}: {round(f1, 3)}")
+
+        # Calculate and log overall F1 average
+        overall_f1 = np.mean(f1_scores)
+        f.write(f"\nOVERALL F1 AVERAGE = {round(overall_f1, 3)}\n\n")
+        print(f"Evaluation completed. Overall F1 Average: {round(overall_f1, 3)}")
+        print(f"Results saved to {log_file_path}")
+
