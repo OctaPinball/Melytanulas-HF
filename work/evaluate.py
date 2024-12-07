@@ -65,6 +65,9 @@ def predict(dir_path, CNN_model, model_name: str, mu=0, sd=1, device='cuda'):
             Imout = np.zeros(shape=[temp.shape[0], temp.shape[1]])
             Imout[n11:n12, n11:n12] = output[n, :, :]
             output_filename = f"slice{n + 1:03}.tiff"
+            directory_to_check = os.path.join(dir_path, file, "auto segmentation", model_name)
+            if not os.path.exists(directory_to_check):
+                os.makedirs(directory_to_check)
             cv2.imwrite(os.path.join(dir_path, file, "auto segmentation", model_name, output_filename), np.uint8(255 * Imout))
 
 def Score(dir_path, model_name: str, log_path):
