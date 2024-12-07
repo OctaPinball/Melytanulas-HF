@@ -23,6 +23,7 @@ from dense_unet import DenseUNet
 from unet import Unet
 from residual_unet import ResidualUNet
 from unet_plusplus import UNetPlusPlus
+from ensemble_model_outputs import ensemble_model_outputs
 
 
 ### ---------- Prepare device ----------------------------------------
@@ -47,7 +48,7 @@ models[model_3_name] = UNetPlusPlus().to(device)
 
 
 ### ---------- Get parameters ----------------------------------------
-all_args = ('-pf', '-ps', '-pr', '-lm', '-ta', '-tm', '-tsa', '-tsm', '-ea', '-em', '-esa', '-esm')
+all_args = ('-pf', '-ps', '-pr', '-lm', '-ta', '-tm', '-tsa', '-tsm', '-ea', '-em', '-esa', '-esm', '-eea', '-eem', '-eesa', '-eesm',)
 args = sys.argv[1:]
 
 force_preprocess = False
@@ -71,6 +72,13 @@ skip_all_evaluation = False
 evaluation_queue = False
 evaluation_skip_queue = False
 
+e_evaluate_all = False
+e_evaluate_model = []
+e_evaluate_skip_model = []
+e_skip_all_evaluation = False
+e_evaluation_queue = False
+e_evaluation_skip_queue = False
+
 for arg in args:
     if arg in all_args:
         train_queue = False
@@ -78,6 +86,8 @@ for arg in args:
         evaluation_queue = False
         evaluation_skip_queue = False
         load_queue = False
+        e_evaluation_queue = False
+        e_evaluation_skip_queue = False
     if arg in ('-pf'):
         force_preprocess = True
         preprocess_specified = True
@@ -115,6 +125,18 @@ for arg in args:
         evaluate_model.append(arg)
     elif evaluation_skip_queue:
         evaluate_skip_model.append(arg)
+    elif arg in ('-eea'):
+        e_evaluate_all = True
+    elif arg in ('-eem'):
+        e_evaluation_queue = True
+    elif arg in ('-eesa'):
+        e_skip_all_evaluation = True
+    elif arg in ('-eesm'):
+        e_evaluation_skip_queue = True
+    elif e_evaluation_queue:
+        e_evaluate_model.append(arg)
+    elif e_evaluation_skip_queue:
+        e_evaluate_skip_model.append(arg)
     else:
         raise Exception("Unknown argument!")
 
@@ -184,3 +206,19 @@ for model_name in evaluation_models:
     mu, sd = dataloader.dataset.get_mean_std()
     predict(dir_path=FILE_PATH, model_name=model_name, CNN_model=models[model_name], mu=mu, sd=sd, device=device)
     Score(dir_path=FILE_PATH, model_name=model_name, log_path=LOG_PATH)
+
+
+### ---------- Evaluate ensemble model ----------
+
+if e_evaluate_skip_model:
+    e_evaluation_models = all_model_name - e_evaluate_skip_model
+elif e_evaluate_model:
+    e_evaluation_models = e_evaluate_model
+elif e_evaluate_all:
+    e_evaluation_models = all_model_name
+elif e_skip_all_evaluation:
+    e_evaluation_models = []
+else:
+    e_evaluation_models = all_model_name
+
+ensemble_model_outputs(base_dir=FILE_PATH, model_names=e_evaluation_models)
