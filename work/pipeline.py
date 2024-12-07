@@ -43,6 +43,7 @@ models[model_3_name] = AttentionUNet().to(device)
 
 
 ### ---------- Get parameters ----------------------------------------
+all_args = ('-pf', '-ps', '-pr', '-ta', '-tm', '-tsa', '-tsm', '-ea', '-em', '-esa', '-esm')
 args = sys.argv[1:]
 
 force_preprocess = False
@@ -64,6 +65,11 @@ evaluation_queue = False
 evaluation_skip_queue = False
 
 for arg in args:
+    if arg in all_args:
+        train_queue = False
+        train_skip_queue = False
+        evaluation_queue = False
+        evaluation_skip_queue = False
     if arg in ('-pf'):
         force_preprocess = True
         preprocess_specified = True
@@ -83,10 +89,8 @@ for arg in args:
         train_skip_queue = True
     elif train_queue:
         train_model.append(arg)
-        train_queue = False
     elif train_skip_queue:
         train_skip_model.append(arg)
-        train_skip_queue = False
     elif arg in ('-ea'):
         evaluate_all = True
     elif arg in ('-em'):
@@ -97,10 +101,8 @@ for arg in args:
         evaluation_skip_queue = True
     elif evaluation_queue:
         evaluate_model.append(arg)
-        evaluation_queue = False
     elif evaluation_skip_queue:
         evaluate_skip_model.append(arg)
-        evaluation_skip_queue = False
     else:
         raise Exception("Unknown argument!")
 
