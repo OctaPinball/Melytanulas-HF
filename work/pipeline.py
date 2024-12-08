@@ -170,7 +170,7 @@ for model_name in train_models:
     print(f"Mean (mu): {mu}, Standard Deviation (sd): {sd}")
     debug_dataset(dataset)
     train_loader, val_loader = get_hdf5_data_loaders(DATA_PATH, BATCH_SIZE)
-    models[model_name] = train(models[model_name], train_loader, val_loader, device, NUM_EPOCHS)
+    models[model_name] = train(models[model_name], model_name, train_loader, val_loader, device, NUM_EPOCHS)
 
 
 
