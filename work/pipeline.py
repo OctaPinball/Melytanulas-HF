@@ -192,7 +192,7 @@ else:
 for model_name in evaluation_models:
     if model_name not in models.keys():
         raise Exception("Unknown model name!")
-    predict(dir_path=FILE_PATH, model_name="unetR", CNN_model=models[model_name], mu=mu, sd=sd, device=device)
+    predict(dir_path=FILE_PATH, model_name=model_name, CNN_model=models[model_name], mu=mu, sd=sd, device=device)
 
 
 ### ---------- Evaluate ensemble model ----------
