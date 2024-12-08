@@ -38,7 +38,7 @@ def model_inference(slices, model_name):
 
     # Perform argmax over the class dimension (axis 1)
     output = np.argmax(output, 1)
-    return np.uint8(255 * output)
+    return np.uint8(255 * output), output
 
 def majority_voting(model_outputs):
     stacked_outputs = np.stack(model_outputs, axis=-1)  # Stack outputs along a new dimension
@@ -55,8 +55,12 @@ def process_uploaded_tiffs(uploaded_files, model_names):
         
         print(f"Number of slices loaded: {len(slices)}")
         
-        model_outputs = [model_inference(slices, model_name) for model_name in model_names]
-        combined_outputs = [majority_voting([model_outputs[m][i] for m in range(len(model_names))]) for i in range(len(slices))]
+
+        model_outputs, normalized_outputs = zip(*[model_inference(slices, model_name) for model_name in model_names])
+        normalized_outputs = list(normalized_outputs)
+        model_outputs = list(model_outputs)
+
+        combined_outputs = [majority_voting([normalized_outputs[m][i] for m in range(len(model_names))]) for i in range(len(slices))]
 
         print("Processing complete.")
         return slices, model_outputs, combined_outputs
