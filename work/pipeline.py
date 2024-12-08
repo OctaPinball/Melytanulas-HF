@@ -146,6 +146,7 @@ elif run_preprocess or not skip_preprocess:
 for load_name in load_model:
     model_name = load_name.split('_')[0]
     models[model_name].load_state_dict(torch.load(os.path.join(MODEL_PATH, f"{load_name}.pth")))
+    models[model_name] = models[model_name].to(device)
 
 
 ### ---------- Training ----------
@@ -192,6 +193,8 @@ else:
 for model_name in evaluation_models:
     if model_name not in models.keys():
         raise Exception("Unknown model name!")
+    dataset = HDF5Dataset(DATA_PATH)
+    mu, sd = compute_mean_and_std(dataset)
     predict(dir_path=FILE_PATH, model_name=model_name, CNN_model=models[model_name], mu=mu, sd=sd, device=device)
 
 

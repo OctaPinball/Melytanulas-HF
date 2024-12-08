@@ -12,7 +12,7 @@ def ensemble_model_outputs(
         return
     # Determine threshold for majority voting
     if threshold is None:
-        threshold = len(model_names) // 2 + 1
+        threshold = 0.5
     
     image_folders = os.listdir(base_dir)
     image_folders.remove("log")
@@ -48,13 +48,13 @@ def ensemble_model_outputs(
                 model_outputs.append(np.array(model_slices))
         
         # Ensure there are enough model outputs for voting
-        if len(model_outputs) < threshold:
+        if len(model_outputs) <= 1:
             print(f"Not enough model outputs for {folder}, skipping...")
             continue
         
         # Stack and compute majority vote
         stacked_outputs = np.stack(model_outputs, axis=0)
-        majority_vote = np.sum(stacked_outputs, axis=0) >= threshold
+        majority_vote = np.mean(stacked_outputs, axis=0) > (threshold * 255)
         
         # Save majority voted slices as TIFF files
         save_path = os.path.join(base_dir, folder, "auto segmentation", "ensemble")
