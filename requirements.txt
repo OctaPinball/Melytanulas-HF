@@ -7,3 +7,5 @@ scikit-learn
 tifffile
 imagecodecs
 tqdm
+monai[all]==1.4.0
+gradio

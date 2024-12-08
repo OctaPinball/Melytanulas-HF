@@ -18,33 +18,13 @@ from parameters import DATA_PATH, FILE_PATH, LOG_PATH, VAL_SPLIT_RATIO, MODEL_PA
 from train import train
 from dataloader import CombinedDataLoader
 from preprocess_data import preprocess
-from attention_unet import AttentionUNet
-from dense_unet import DenseUNet
-from unet import Unet
-from residual_unet import ResidualUNet
-from unet_plusplus import UNetPlusPlus
 from ensemble_model_outputs import ensemble_model_outputs
+from model_list import models, all_model_name
 
 
 ### ---------- Prepare device ----------------------------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
-### ---------- Prepare models ----------------------------------------
-model_1_name = 'unet'
-model_2_name = 'residualUnet'
-model_3_name = 'unetPlusplus'
-model_4_name = 'denseUnet'
-model_5_name = 'attentionUnet'
-all_model_name = [model_1_name, model_2_name, model_3_name, model_4_name, model_5_name]
-
-#TODO: Add models
-models = {}
-models[model_1_name] = Unet().to(device)
-models[model_2_name] = ResidualUNet().to(device)
-models[model_3_name] = UNetPlusPlus().to(device)
-models[model_4_name] = DenseUNet().to(device)
-models[model_5_name] = AttentionUNet().to(device)
 
 
 ### ---------- Get parameters ----------------------------------------
