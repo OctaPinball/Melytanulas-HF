@@ -11,15 +11,18 @@ import os
 import tifffile as tiff
 import sys
 
-from dataset import HDF5Dataset
-from evaluate import predict, Score
+
+from dataset import HDF5Dataset, compute_mean_and_std, debug_dataset
+from evaluate import predict
 from parameters import DATA_PATH, FILE_PATH, LOG_PATH, VAL_SPLIT_RATIO, MODEL_PATH
-from train import train
-from dataloader import CombinedDataLoader
+from train import train_model as train
+from dataloader import get_hdf5_data_loaders
 from preprocess_data import preprocess
 from ensemble_model_outputs import ensemble_model_outputs
 from model_list import models, all_model_name
 
+NUM_EPOCHS = 2
+BATCH_SIZE = 16
 
 ### ---------- Prepare device ----------------------------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -162,9 +165,15 @@ else:
 for model_name in train_models:
     if model_name not in models.keys():
         raise Exception("Unknown model name!")
-    dataset = HDF5Dataset(DATA_PATH, subset_size=5)
-    dataloader = CombinedDataLoader(dataset, VAL_SPLIT_RATIO, 4)
-    train(model=models[model_name], model_name=model_name, dataloader=dataloader, max_epoch=6, device=device, save_interval=5, evaluate_interval=5)
+    dataset = HDF5Dataset(DATA_PATH)
+    mu, sd = compute_mean_and_std(dataset)
+    print(f"Mean (mu): {mu}, Standard Deviation (sd): {sd}")
+    debug_dataset(dataset)
+    train_loader, val_loader = get_hdf5_data_loaders(DATA_PATH, BATCH_SIZE)
+    models[model_name] = train(models[model_name], train_loader, val_loader, device, NUM_EPOCHS)
+
+
+
 
 
 ### ---------- Evaluate ----------
@@ -183,9 +192,7 @@ else:
 for model_name in evaluation_models:
     if model_name not in models.keys():
         raise Exception("Unknown model name!")
-    mu, sd = dataloader.dataset.get_mean_std()
-    predict(dir_path=FILE_PATH, model_name=model_name, CNN_model=models[model_name], mu=mu, sd=sd, device=device)
-    Score(dir_path=FILE_PATH, model_name=model_name, log_path=LOG_PATH)
+    predict(dir_path=FILE_PATH, model_name="unetR", CNN_model=models[model_name], mu=mu, sd=sd, device=device)
 
 
 ### ---------- Evaluate ensemble model ----------

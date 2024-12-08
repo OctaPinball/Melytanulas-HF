@@ -56,4 +56,4 @@ default_model_paths = {}
 default_model_paths[model_1_name] = "best_model.pth"
 default_model_paths[model_2_name] = "unet-simple-dice-new.pth"
 default_model_paths[model_3_name] = "unet-plus-plus-dice-new.pth"
-default_model_paths[model_4_name] = "dynunet-dice-new.pth"
+default_model_paths[model_4_name] = "dynunet-dice-new-20.pth"

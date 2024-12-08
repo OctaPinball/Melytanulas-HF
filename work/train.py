@@ -12,89 +12,70 @@ import tifffile as tiff
 
 import dataloader as dl
 from parameters import FILE_PATH, LOG_PATH, MODEL_PATH
-from evaluate import Score, predict
 from tqdm import tqdm  # Progress bar library
 import time
+from monai.losses import DiceLoss
 
 
-def train(model, model_name: str, dataloader: dl.CombinedDataLoader, max_epoch: int, device, save_interval: int = None, evaluate_interval: int = None):
-    print(f"Starting training in model: {model_name}")
-    optimizer = optim.Adam(model.parameters(), lr=0.0001)
-    criterion = nn.CrossEntropyLoss()
+def train_model(model, model_name, train_loader, val_loader, device, num_epochs=10):
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    criterion = DiceLoss(sigmoid=False, softmax=True)
 
-    start_time = time.time()  # Start the timer
+    model = model.to(device)
+    best_val_loss = float('inf')
 
-    print(f"Training started on device: {device}")
-    print(f"Total epochs: {max_epoch}\n")
+    for epoch in range(num_epochs):
+        print(f"\nEpoch {epoch + 1}/{num_epochs}")
+        print("-" * 20)
 
-    # Training loop with validation
-    for epoch in range(1, max_epoch):
-        print(f"Epoch [{epoch}/{max_epoch}]")
+        # Training
         model.train()
         running_loss = 0.0
-        train_loader_len = len(dataloader.train_loader)
-        
-        # Training
-        print("Training:")
-        train_bar = tqdm(dataloader.train_loader, total=train_loader_len, desc="Train Progress", ncols=80)
-        for images, labels in train_bar:
-            images, labels = images.to(device), labels.to(device)
+        for batch in tqdm(train_loader, desc="Training"):
+            images = batch["image"].to(device)  # Shape: [B, C, H, W]
+            labels = batch["label"].to(device)  # Shape: [B, H, W]
+
+            labels = F.one_hot(labels, num_classes=2).permute(0, 3, 1, 2).float()
+
             optimizer.zero_grad()
-            outputs = model(images.permute(0, 3, 1, 2))
-            
-            outputs = F.interpolate(outputs, size=(112, 112), mode='bilinear', align_corners=False)
-            labels = torch.argmax(labels, dim=-1)
+            outputs = model(images)  # Expected shape: [B, num_classes, H, W]
+            if isinstance(outputs, list):
+                outputs = outputs[0]  # Take the primary tensor output
+
+            # Compute the loss
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
 
-            train_bar.set_postfix(Loss=f"{loss.item():.4f}")
-        
-        avg_train_loss = running_loss / train_loader_len
-        print(f"Train Loss: {avg_train_loss:.4f}")
+        avg_train_loss = running_loss / len(train_loader)
+        print(f"Training Loss: {avg_train_loss:.4f}")
 
-        
         # Validation
         model.eval()
         val_loss = 0.0
-        val_loader_len = len(dataloader.val_loader)
-        print("\nValidation:")
-        val_bar = tqdm(dataloader.val_loader, total=val_loader_len, desc="Validation Progress", ncols=80)
         with torch.no_grad():
-            for images, labels in val_bar:
-                images, labels = images.to(device), labels.to(device)
-                outputs = model(images.permute(0, 3, 1, 2))
-                
-                outputs = F.interpolate(outputs, size=(112, 112), mode='bilinear', align_corners=False)
-                labels = torch.argmax(labels, dim=-1)
+            for batch in tqdm(val_loader, desc="Validation"):
+                images = batch["image"].to(device)  # Shape: [B, C, H, W]
+                labels = batch["label"].to(device)  # Shape: [B, H, W]
+
+                labels = F.one_hot(labels, num_classes=2).permute(0, 3, 1, 2).float()
+
+                outputs = model(images)  # Model output: [B, num_classes, H, W]
+                if isinstance(outputs, list):
+                    outputs = outputs[0]  # Take the primary tensor output
+
+                # Compute the loss
                 loss = criterion(outputs, labels)
                 val_loss += loss.item()
-                val_bar.set_postfix(Loss=f"{loss.item():.4f}")
-        
-        avg_val_loss = val_loss / val_loader_len
-        print(f"Validation Loss: {avg_val_loss:.4f}\n")
-        
-        print(f"Epoch [{epoch}/{max_epoch}], Validation Loss: {val_loss / len(dataloader.val_loader)}")
 
-        # Save model
-        if save_interval is not None and (epoch+1) % save_interval == 0:
-            if not os.path.exists(MODEL_PATH):
-                os.makedirs(MODEL_PATH)
-            save_path = os.path.join(MODEL_PATH, f"{model_name}_epoch_{epoch}.pth" if model_name else f"model_{epoch}.pth")
-            save_path = os.path.join(MODEL_PATH, f"{model_name}_epoch_{epoch}.pth" if model_name else f"model_{epoch}.pth")
-            torch.save(model.state_dict(), save_path)
-            print(f"Model saved to {save_path}")
+        avg_val_loss = val_loss / len(val_loader)
+        print(f"Validation Loss: {avg_val_loss:.4f}")
 
-        # Evaluate model
-        if evaluate_interval is not None and (epoch+1) % evaluate_interval == 0:
-            print("Running evaluation...")
-            mu, sd = dataloader.dataset.get_mean_std()
-            predict(dir_path=FILE_PATH, model_name=model_name, CNN_model=model, mu=mu, sd=sd, device=device)
-            Score(dir_path=FILE_PATH, model_name=model_name, log_path=LOG_PATH)
-            print("Evaluation completed.\n")
+        # Save the best model
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+            torch.save(model.state_dict(), os.path.join(MODEL_PATH, f"{model_name}_{epoch}.pth"))
+            print("Saved the best model.")
 
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    print(f"Training completed in {elapsed_time // 60:.0f}m {elapsed_time % 60:.0f}s")
-
+    return model
