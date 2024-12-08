@@ -11,7 +11,6 @@ import os
 import tifffile as tiff
 import sys
 
-from baseline import BaselineModel
 from dataset import HDF5Dataset
 from evaluate import predict, Score
 from parameters import DATA_PATH, FILE_PATH, LOG_PATH, VAL_SPLIT_RATIO, MODEL_PATH
