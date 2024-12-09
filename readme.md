@@ -158,6 +158,6 @@ Current supported model list. Use the names in the 'Model name' column as argume
 | UnetR | `unetr` | `unetr.pth` |
 | Unet | `basicunet` | `basicunet.pth` |
 | Unet++ | `unetplusplus` | `unetplusplus.pth` |
-| DYNUnet | `dynunet` | `dynunet.pth` |
+| DynUnet | `dynunet` | `dynunet.pth` |
 
 
