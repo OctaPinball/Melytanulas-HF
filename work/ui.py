@@ -10,19 +10,6 @@ import torch.nn.functional as F
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def calculate_dice_score(prediction, ground_truth):
-    """
-    Compute Dice score.
-    Args:
-        prediction (np.array): Binary prediction array.
-        ground_truth (np.array): Binary ground truth array.
-    Returns:
-        float: Dice score.
-    """
-    prediction = prediction > 0
-    ground_truth = ground_truth > 0
-    intersection = np.sum(prediction * ground_truth)
-    return (2. * intersection) / (np.sum(prediction) + np.sum(ground_truth) + 1e-7)  # Add epsilon to avoid division by zero
 
 def calculate_f1_score(prediction, ground_truth):
     """
@@ -122,15 +109,12 @@ def viewer(slice_idx, input_slices, model_outputs, combined_outputs, ground_trut
     combined_slice = combined_outputs[slice_idx]
 
     # Metrikák számítása (ha van ground truth)
-    dice_scores = []
     f1_scores = []
-    ensemble_dice = ensemble_f1 = None
+    ensemble_f1 = None
     if ground_truth:
         for model_output in model_slices:
-            dice_scores.append(calculate_dice_score(model_output, ground_truth[slice_idx]))
             f1_scores.append(calculate_f1_score(model_output, ground_truth[slice_idx]))
         # Ensemble metrikák
-        ensemble_dice = calculate_dice_score(combined_slice, ground_truth[slice_idx])
         ensemble_f1 = calculate_f1_score(combined_slice, ground_truth[slice_idx])
 
     # Megjelenített képek listája
@@ -144,9 +128,7 @@ def viewer(slice_idx, input_slices, model_outputs, combined_outputs, ground_trut
 
     # Kiegészítés metrikák megjelenítéséhez
     metric_info = {
-        "dice_scores": dice_scores,
         "f1_scores": f1_scores,
-        "ensemble_dice": ensemble_dice,
         "ensemble_f1": ensemble_f1,
     }
     return result, metric_info
@@ -230,16 +212,15 @@ def gradio_interface(model_names):
             # Viewer eredményei
             slices, metric_info = viewer(slice_idx, input_slices, model_outputs, combined_outputs, ground_truth)
 
-            # Dice és F1 metrikák formázása
-            dice_texts = [f"Dice: {dice:.4f}" for dice in metric_info["dice_scores"]]
+            # F1 metrikák formázása
             f1_texts = [f"F1: {f1:.4f}" for f1 in metric_info["f1_scores"]]
-            ensemble_metrics = f"Dice: {metric_info['ensemble_dice']:.4f} | F1: {metric_info['ensemble_f1']:.4f}" if ground_truth else "No ground truth"
+            ensemble_metrics = f"F1: {metric_info['ensemble_f1']:.4f}" if ground_truth else "No ground truth"
 
             # Képek kimenete
             output_images = slices
 
             # Metrikák kimenete
-            metric_outputs = dice_texts + f1_texts + [ensemble_metrics]
+            metric_outputs = f1_texts + [ensemble_metrics]
 
             # Biztosítsuk, hogy az összes komponenshez tartozik kimenet
             return output_images + metric_outputs
