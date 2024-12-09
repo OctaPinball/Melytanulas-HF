@@ -13,7 +13,7 @@ import sys
 
 
 from dataset import HDF5Dataset, compute_mean_and_std, debug_dataset
-from evaluate import predict
+from evaluate import predict, Score
 from parameters import DATA_PATH, FILE_PATH, LOG_PATH, VAL_SPLIT_RATIO, MODEL_PATH
 from train import train_model as train
 from dataloader import get_hdf5_data_loaders
@@ -196,6 +196,8 @@ for model_name in evaluation_models:
     dataset = HDF5Dataset(DATA_PATH)
     mu, sd = compute_mean_and_std(dataset)
     predict(dir_path=FILE_PATH, model_name=model_name, CNN_model=models[model_name], mu=mu, sd=sd, device=device)
+    Score(dir_path=FILE_PATH, model_name=model_name, log_path=LOG_PATH)
+    
 
 
 ### ---------- Evaluate ensemble model ----------
@@ -212,3 +214,4 @@ else:
     e_evaluation_models = all_model_name
 
 ensemble_model_outputs(base_dir=FILE_PATH, model_names=e_evaluation_models)
+Score(dir_path=FILE_PATH, model_name="ensemble", log_path=LOG_PATH)

@@ -22,7 +22,7 @@ def predict(dir_path, CNN_model, model_name: str, mu=0, sd=1, device='cuda'):
 
     files = sorted(files)
 
-    files = files[:1]
+    #files = files[:10]
 
     CNN_model.eval()
 
@@ -78,3 +78,79 @@ def predict(dir_path, CNN_model, model_name: str, mu=0, sd=1, device='cuda'):
             if not os.path.exists(directory_to_check):
                 os.makedirs(directory_to_check)
             cv2.imwrite(os.path.join(dir_path, file, "auto segmentation", model_name, output_filename), np.uint8(255 * Imout))
+
+def Score(dir_path, model_name: str, log_path):
+    """
+    Evaluate segmentation performance and log F1 and Dice scores.
+
+    Args:
+        dir_path (str): Path to the directory containing test files.
+        model_name (str): Name of the model for organizing predictions.
+        log_path (str): Path to save the evaluation log.
+    """
+    print(f"Starting evaluation for model: {model_name}")
+    log_file_path = os.path.join(log_path, f"log_{model_name}.txt")
+
+    # Create or append to the log file
+    with open(log_file_path, "a") as f:
+        f1_scores = []
+        dice_scores = []
+
+        # List test files
+        files = os.listdir(dir_path)
+        files.remove("log")
+        files.remove("Training.h5")
+
+        files = sorted(files)
+
+        #files = files[:10]
+
+        print(f"Found {len(files)} files for evaluation.")
+
+        for file_idx, file in enumerate(files, 1):
+            print(f"[{file_idx}/{len(files)}] Evaluating file: {file}")
+
+            pred_dir = os.path.join(dir_path, file, "auto segmentation", model_name)
+            true_dir = os.path.join(dir_path, file, "cavity")
+
+            pred = []
+            true = []
+
+            slice_files = os.listdir(pred_dir)
+            print(f"  Found {len(slice_files)} slices in {pred_dir}.")
+
+            # Process slices
+            for k in range(len(slice_files)):
+                pred_img_path = os.path.join(pred_dir, f"slice{k+1:03}.tiff")
+                true_img_path = os.path.join(true_dir, f"slice{k+1:03}.tiff")
+
+                # Read TIFF files
+                pred_img = tiff.imread(pred_img_path) // 255
+                true_img = tiff.imread(true_img_path) // 255
+
+                pred.append(pred_img.flatten())
+                true.append(true_img.flatten())
+
+            pred = np.concatenate(pred)
+            true = np.concatenate(true)
+
+            # Calculate F1 score
+            f1 = f1_score(true, pred, average="binary")
+            f1_scores.append(f1)
+
+            # Calculate Dice score
+            intersection = np.sum(pred * true)
+            dice = (2.0 * intersection) / (np.sum(pred) + np.sum(true) + 1e-6)  # Avoid division by zero
+            dice_scores.append(dice)
+
+            # Log individual file scores
+            f.write(f"{file} - F1 Score: {round(f1, 3)}, Dice Score: {round(dice, 3)}\n")
+            print(f"  F1 Score for {file}: {round(f1, 3)}, Dice Score: {round(dice, 3)}")
+
+        # Calculate and log overall averages
+        overall_f1 = np.mean(f1_scores)
+        overall_dice = np.mean(dice_scores)
+        f.write(f"\nOVERALL F1 AVERAGE = {round(overall_f1, 3)}\n")
+        f.write(f"OVERALL DICE AVERAGE = {round(overall_dice, 3)}\n\n")
+        print(f"Evaluation completed. Overall F1 Average: {round(overall_f1, 3)}, Overall Dice Average: {round(overall_dice, 3)}")
+        print(f"Results saved to {log_file_path}")
