@@ -110,7 +110,7 @@ python pipeline.py
 This script will run the whole project including preprocessing, training and evaluating.
 - The script will generate the `TrainingSet.h5` file and save it into the `preprocessed_data/` folder. Additionally, it will create 54 subfolders within `preprocessed_data/`, each containing `.tiff` files for the cavity masks and the corresponding MRI data slices from the test set.
 - The script will train the models with the preprocessed data.
-- The script will evaluate all models, by firstly generate and save the results for each MR image as `.tiff` files in the `auto segmentation` folder, which is in the folder of the corresponding MR image. After all generation is finished the script will calculate the F1 score for the model. F1 Score = 2 * (Precision * Recall) / (Precision + Recall)
+- The script will evaluate all models, by firstly generate and save the results for each MR image as `.tiff` files in the `auto segmentation` folder, which is in the folder of the corresponding MR image. After all generation is finished the script will calculate the F1 score for the model and logs it to the `preprocessed_data/log` folder. F1 Score = 2 * (Precision * Recall) / (Precision + Recall) 
 
 ### Arguments
 There are numerous options to customize the run operation by using arguments after the `python pipeline.py` command. Do not use more than one flag from the same type. For example, you can't use `-tm` and `-ta` at the same time, because they are in the same flag type (training arguments).
@@ -118,6 +118,9 @@ There are numerous options to customize the run operation by using arguments aft
 Preprocess arguments
 - `-pr` preprocess data (default).
 - `-ps` skip data preprocessing. This flag can be dangerous, if you want to train or evaluate without preprocessed dataset exception will be thrown. Use only when you have already done the preprocessing!
+
+Model loading arguments
+- `-lm` load model. After the flag, the name of the model file must be given in the following format: `-lm selected_models_name_anything`. You can select multiple models: `-lm model_name_1_anything model_name_2_anything`. It's important that the name of the file must begin with the name of the model, and you must not use .file type at the end. You can check the model names in the Model list section.
 
 Training arguments
 - `-ta` train all models (default).
