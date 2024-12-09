@@ -133,12 +133,27 @@ Ensemble evaluation arguments
 - `-eesa` skip ensemble evaluation.
 - `-eesm` skip selected models. All models will be queued up to create and evaluate ensembled model, but the selected ones will get removed from the queue. After the flag, the name of the model must be given in the following format: `-eesm selected_models_name`. You can select multiple models: `-eesm model_name_1 model_name_2`.
 
+# Step 5: Run UI
+After the training you have the ability to use multiple models and the ensembled model on any data input in an interactive UI. Use the following:
+```bash
+cd work/
+python ui.py
+```
+![image](https://github.com/user-attachments/assets/ca104320-2476-4236-bd5b-8c8c704de5dd)
+By uploading tiff files in the Upload MRI slices section, and uploading the corresponding labels in the Upload Ground Truth section (optional), and by clicking on the Process button you have the ability the segmentate the uploaded files and compare the results to the ground truth. You can navigate through the slices using the slider.
+![image](https://github.com/user-attachments/assets/da63bf99-d239-4b14-ba8c-88c2f2958581)
+You can see the input slice, and all the output slices from the models
+
+It's important to know that the default models, which the UI uses are in the `preprocessed_data/model` folder. You can add trained models to this folder, and in order to use them, you must give them the correct file names. These names can be found in the Model list section.
+
 ### Model list
 Current supported model list. Use the names in the 'Model name' column as arguments.
 
-| Model | Model name | Architecture |
+| Model | Model name | Default path |
 | --- | --- | --- |
-| Baseline | `baseline` | Unet |
-| Unet | `unet` | Unet |
+| UnetR | `unetr` | `unetr.pth` |
+| Unet | `basicunet` | `basicunet.pth` |
+| Unet++ | `unetplusplus` | `unetplusplus.pth` |
+| DYNUnet | `dynunet` | `dynunet.pth` |
 
 
