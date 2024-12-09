@@ -10,6 +10,39 @@ import torch.nn.functional as F
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+def calculate_dice_score(prediction, ground_truth):
+    """
+    Compute Dice score.
+    Args:
+        prediction (np.array): Binary prediction array.
+        ground_truth (np.array): Binary ground truth array.
+    Returns:
+        float: Dice score.
+    """
+    prediction = prediction > 0
+    ground_truth = ground_truth > 0
+    intersection = np.sum(prediction * ground_truth)
+    return (2. * intersection) / (np.sum(prediction) + np.sum(ground_truth) + 1e-7)  # Add epsilon to avoid division by zero
+
+def calculate_f1_score(prediction, ground_truth):
+    """
+    Compute F1 score.
+    Args:
+        prediction (np.array): Binary prediction array.
+        ground_truth (np.array): Binary ground truth array.
+    Returns:
+        float: F1 score.
+    """
+    prediction = prediction > 0
+    ground_truth = ground_truth > 0
+    tp = np.sum(prediction * ground_truth)
+    fp = np.sum(prediction * (1 - ground_truth))
+    fn = np.sum((1 - prediction) * ground_truth)
+    precision = tp / (tp + fp + 1e-7)
+    recall = tp / (tp + fn + 1e-7)
+    return 2 * (precision * recall) / (precision + recall + 1e-7)
+
+
 # Placeholder function to simulate model inference
 def model_inference(slices, model_name):
     n1 = 112
@@ -80,7 +113,7 @@ def process_uploaded_tiffs(uploaded_files, model_names, ground_truth_files=None)
         print(f"Error during TIFF processing: {e}")
         return None, None, None, None
     
-def viewer(slice_idx, input_slices, model_outputs, combined_outputs):
+def viewer(slice_idx, input_slices, model_outputs, combined_outputs, ground_truth):
     max_idx = len(input_slices) - 1
     slice_idx = max(0, min(slice_idx, max_idx))  # Clamp index within range
 
@@ -88,7 +121,36 @@ def viewer(slice_idx, input_slices, model_outputs, combined_outputs):
     model_slices = [model_output[slice_idx] for model_output in model_outputs]
     combined_slice = combined_outputs[slice_idx]
 
-    return [input_slice] + model_slices + [combined_slice]
+    # Metrikák számítása (ha van ground truth)
+    dice_scores = []
+    f1_scores = []
+    ensemble_dice = ensemble_f1 = None
+    if ground_truth:
+        for model_output in model_slices:
+            dice_scores.append(calculate_dice_score(model_output, ground_truth[slice_idx]))
+            f1_scores.append(calculate_f1_score(model_output, ground_truth[slice_idx]))
+        # Ensemble metrikák
+        ensemble_dice = calculate_dice_score(combined_slice, ground_truth[slice_idx])
+        ensemble_f1 = calculate_f1_score(combined_slice, ground_truth[slice_idx])
+
+    # Megjelenített képek listája
+    result = [input_slice] + model_slices + [combined_slice]
+
+    # Ha van ground truth, adjuk hozzá
+    if ground_truth and len(ground_truth) > slice_idx:
+        result.append(ground_truth[slice_idx])
+    else:
+        result.append(None)  # No ground truth available
+
+    # Kiegészítés metrikák megjelenítéséhez
+    metric_info = {
+        "dice_scores": dice_scores,
+        "f1_scores": f1_scores,
+        "ensemble_dice": ensemble_dice,
+        "ensemble_f1": ensemble_f1,
+    }
+    return result, metric_info
+
 
 def gradio_interface(model_names):
     with gr.Blocks() as demo:
@@ -124,6 +186,12 @@ def gradio_interface(model_names):
             ensemble_image = gr.Image(label="Ensembled Output")
             ground_truth_image = gr.Image(label="Ground Truth (if provided)")
 
+        with gr.Row():
+            model_metrics = [gr.Text(label=f"{model_name} Metrics") for model_name in model_names]
+            ensemble_metric = gr.Text(label="Ensembled Metrics")
+
+
+
         # Define state variables
         input_slices_state = gr.State(value=None)
         model_outputs_state = gr.State(value=None)
@@ -153,20 +221,29 @@ def gradio_interface(model_names):
                 gr.update(value=0, minimum=0, maximum=slice_count - 1)
             )
 
-        # Update function
         def update(slice_idx, input_slices, model_outputs, combined_outputs, ground_truth):
             if slice_idx is None:
                 slice_idx = 0
             if not input_slices or not model_outputs or not combined_outputs:
                 raise ValueError("No valid data available for display. Please check the uploaded files and processing.")
             
-            slices = viewer(slice_idx, input_slices, model_outputs, combined_outputs)
-            if ground_truth and len(ground_truth) > slice_idx:
-                slices.append(ground_truth[slice_idx])
-            else:
-                slices.append(None)  # No ground truth available
+            # Viewer eredményei
+            slices, metric_info = viewer(slice_idx, input_slices, model_outputs, combined_outputs, ground_truth)
 
-            return slices
+            # Dice és F1 metrikák formázása
+            dice_texts = [f"Dice: {dice:.4f}" for dice in metric_info["dice_scores"]]
+            f1_texts = [f"F1: {f1:.4f}" for f1 in metric_info["f1_scores"]]
+            ensemble_metrics = f"Dice: {metric_info['ensemble_dice']:.4f} | F1: {metric_info['ensemble_f1']:.4f}" if ground_truth else "No ground truth"
+
+            # Képek kimenete
+            output_images = slices
+
+            # Metrikák kimenete
+            metric_outputs = dice_texts + f1_texts + [ensemble_metrics]
+
+            # Biztosítsuk, hogy az összes komponenshez tartozik kimenet
+            return output_images + metric_outputs
+
 
         # Connect functionality
         process_button.click(
@@ -184,8 +261,10 @@ def gradio_interface(model_names):
         slice_slider.change(
             update,
             inputs=[slice_slider, input_slices_state, model_outputs_state, combined_outputs_state, ground_truth_state],
-            outputs=[input_image] + model_outputs_images + [ensemble_image, ground_truth_image],
+            outputs=[input_image] + model_outputs_images + [ensemble_image, ground_truth_image] + model_metrics + [ensemble_metric],
         )
+
+
 
         # Custom HTML with CSS to make the file uploader scrollable with a max height
         gr.HTML("""
