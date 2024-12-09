@@ -42,6 +42,32 @@ def calculate_f1_score(prediction, ground_truth):
     recall = tp / (tp + fn + 1e-7)
     return 2 * (precision * recall) / (precision + recall + 1e-7)
 
+def calculate_dice(predicted, ground_truth):
+    # Konvertáljuk a listákat NumPy tömbökké
+    predicted = np.array(predicted)
+    ground_truth = np.array(ground_truth)
+    
+    # Dice metrika számítása
+    intersection = np.sum(predicted * ground_truth)
+    sum_union = np.sum(predicted) + np.sum(ground_truth)
+    return 2 * intersection / sum_union if sum_union > 0 else 1.0
+
+
+def calculate_f1(predicted, ground_truth):
+    # Konvertáljuk a listákat NumPy tömbökké
+    predicted = np.array(predicted)
+    ground_truth = np.array(ground_truth)
+    
+    # F1 metrika számítása
+    tp = np.sum((predicted == 1) & (ground_truth == 1))
+    fp = np.sum((predicted == 1) & (ground_truth == 0))
+    fn = np.sum((predicted == 0) & (ground_truth == 1))
+    precision = tp / (tp + fp) if tp + fp > 0 else 0
+    recall = tp / (tp + fn) if tp + fn > 0 else 0
+    return 2 * precision * recall / (precision + recall) if precision + recall > 0 else 0
+
+
+
 
 # Placeholder function to simulate model inference
 def model_inference(slices, model_name):
@@ -187,8 +213,14 @@ def gradio_interface(model_names):
             ground_truth_image = gr.Image(label="Ground Truth (if provided)")
 
         with gr.Row():
-            model_metrics = [gr.Text(label=f"{model_name} Metrics") for model_name in model_names]
-            ensemble_metric = gr.Text(label="Ensembled Metrics")
+            columns = []
+            for model_name in model_names:
+                with gr.Column():
+                    gr.Text(label=f"{model_name} Dice")    # Dice metrika
+                    gr.Text(label=f"{model_name} F1")      # F1 metrika
+                    gr.Text(label=f"{model_name} Dice Total")  # Összesített Dice
+                    gr.Text(label=f"{model_name} F1 Total")    # Összesített F1
+                    columns.append(gr.Column())
 
 
 
@@ -221,28 +253,55 @@ def gradio_interface(model_names):
                 gr.update(value=0, minimum=0, maximum=slice_count - 1)
             )
 
+        def display_metrics(model_names, metrics_per_model, ensemble_metrics):
+            with gr.Row():
+                for idx, model_name in enumerate(model_names):
+                    with gr.Column():
+                        gr.Text(value=f"{model_name} Metrics", bold=True)
+                        gr.Text(value=f"Slice Dice: {metrics_per_model[idx][0]}")
+                        gr.Text(value=f"Slice F1: {metrics_per_model[idx][1]}")
+                        gr.Text(value=f"Total Dice: {metrics_per_model[idx][2]}")
+                        gr.Text(value=f"Total F1: {metrics_per_model[idx][3]}")
+                with gr.Column():
+                    gr.Text(value="Ensemble Metrics", bold=True)
+                    gr.Text(value=f"Slice Dice: {ensemble_metrics[0]}")
+                    gr.Text(value=f"Slice F1: {ensemble_metrics[1]}")
+                    gr.Text(value=f"Total Dice: {ensemble_metrics[2]}")
+                    gr.Text(value=f"Total F1: {ensemble_metrics[3]}")
+
+
         def update(slice_idx, input_slices, model_outputs, combined_outputs, ground_truth):
-            if slice_idx is None:
-                slice_idx = 0
             if not input_slices or not model_outputs or not combined_outputs:
-                raise ValueError("No valid data available for display. Please check the uploaded files and processing.")
-            
-            # Viewer eredményei
-            slices, metric_info = viewer(slice_idx, input_slices, model_outputs, combined_outputs, ground_truth)
+                raise ValueError("No valid data available for display.")
 
-            # Dice és F1 metrikák formázása
-            dice_texts = [f"Dice: {dice:.4f}" for dice in metric_info["dice_scores"]]
-            f1_texts = [f"F1: {f1:.4f}" for f1 in metric_info["f1_scores"]]
-            ensemble_metrics = f"Dice: {metric_info['ensemble_dice']:.4f} | F1: {metric_info['ensemble_f1']:.4f}" if ground_truth else "No ground truth"
+            # Get the slice data
+            input_slice = input_slices[slice_idx]
+            ground_truth_slice = ground_truth[slice_idx] if ground_truth else None
 
-            # Képek kimenete
-            output_images = slices
+            # Compute metrics
+            metrics_per_model = [
+                (
+                    calculate_dice(model_output[slice_idx], ground_truth_slice),
+                    calculate_f1(model_output[slice_idx], ground_truth_slice),
+                    calculate_dice(model_output, ground_truth),
+                    calculate_f1(model_output, ground_truth)
+                )
+                for model_output in model_outputs
+            ]
 
-            # Metrikák kimenete
-            metric_outputs = dice_texts + f1_texts + [ensemble_metrics]
+            ensemble_metrics = (
+                calculate_dice(combined_outputs[slice_idx], ground_truth_slice),
+                calculate_f1(combined_outputs[slice_idx], ground_truth_slice),
+                calculate_dice(combined_outputs, ground_truth),
+                calculate_f1(combined_outputs, ground_truth)
+            )
 
-            # Biztosítsuk, hogy az összes komponenshez tartozik kimenet
-            return output_images + metric_outputs
+            # Prepare image outputs
+            output_images = [input_slice] + [model_output[slice_idx] for model_output in model_outputs] + [combined_outputs[slice_idx], ground_truth_slice]
+
+            return output_images, metrics_per_model, ensemble_metrics
+
+
 
 
         # Connect functionality
@@ -261,8 +320,16 @@ def gradio_interface(model_names):
         slice_slider.change(
             update,
             inputs=[slice_slider, input_slices_state, model_outputs_state, combined_outputs_state, ground_truth_state],
-            outputs=[input_image] + model_outputs_images + [ensemble_image, ground_truth_image] + model_metrics + [ensemble_metric],
+            outputs=[
+                input_image,
+                *model_outputs_images,
+                ensemble_image,
+                ground_truth_image,
+                display_metrics(model_names, metrics_per_model, ensemble_metrics),
+            ]
         )
+
+
 
 
 
