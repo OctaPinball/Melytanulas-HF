@@ -96,6 +96,10 @@ Run the container with the current directory mounted, so the files are accessibl
 ```bash
 docker run -it --name your-container-name -v ${PWD}:/workspace your-image-name
 ```
+Run this if you want to use CUDA:
+```bash
+docker run --gpus all -it --name your-container-name -v ${PWD}:/workspace your-image-name
+```
 
 # Step 4: Run the pipeline
 Inside the container, navigate to the /work folder and run the pipeline script:
