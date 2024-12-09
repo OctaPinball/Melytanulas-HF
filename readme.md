@@ -109,7 +109,7 @@ This script will run the whole project including preprocessing, training and eva
 - The script will evaluate all models, by firstly generate and save the results for each MR image as `.tiff` files in the `auto segmentation` folder, which is in the folder of the corresponding MR image. After all generation is finished the script will calculate the F1 score for the model. F1 Score = 2 * (Precision * Recall) / (Precision + Recall)
 
 ### Arguments
-There are numerous options to customize the run operation by using arguments after the `python pipeline.py` command. Do not use more than one flag from the same type, but you can use a flag more than once. For example, you can use two `-tm` flags since they are the same, but you can't use `-tm` and `-ta` at the same time, because they are in the same flag type (training arguments).
+There are numerous options to customize the run operation by using arguments after the `python pipeline.py` command. Do not use more than one flag from the same type. For example, you can't use `-tm` and `-ta` at the same time, because they are in the same flag type (training arguments).
 
 Preprocess arguments
 - `-pr` preprocess data (default).
@@ -117,22 +117,43 @@ Preprocess arguments
 
 Training arguments
 - `-ta` train all models (default).
-- `-tm` train selected models. After the flag, the name of the model must be given in the following format: `-tm selected_models_name`. You can use this flag again to select another model: `-tm model_name_1 -tm model_name_2`.
+- `-tm` train selected models. After the flag, the name of the model must be given in the following format: `-tm selected_models_name`. You can select multiple models: `-tm model_name_1 model_name_2`.
 - `-tsa` skip all training. No model will be trained.
-- `-tsm` skip selected models. All models will be queued up for training, but the selected ones will get removed from the queue. After the flag, the name of the model must be given in the following format: `-tsm selected_models_name`. You can use this flag again to select another model: `-tsm model_name_1 -tsm model_name_2`.
+- `-tsm` skip selected models. All models will be queued up for training, but the selected ones will get removed from the queue. After the flag, the name of the model must be given in the following format: `-tsm selected_models_name`. You can select multiple models: `-tsm model_name_1 model_name_2`.
 
 Evaluation arguments
 - `-ea` evaluate all models (default).
-- `-em` evaluate selected models. After the flag, the name of the model must be given in the following format: `-em selected_models_name`. You can use this flag again to select another model: `-em model_name_1 -em model_name_2`.
+- `-em` evaluate selected models. After the flag, the name of the model must be given in the following format: `-em selected_models_name`. You can select multiple models: `-em model_name_1 model_name_2`.
 - `-esa` skip all evaluation. No model will be evaluated.
-- `-esm` skip selected models. All models will be queued up for evaluation, but the selected ones will get removed from the queue. After the flag, the name of the model must be given in the following format: `-esm selected_models_name`. You can use this flag again to select another model: `-esm model_name_1 -esm model_name_2`.
+- `-esm` skip selected models. All models will be queued up for evaluation, but the selected ones will get removed from the queue. After the flag, the name of the model must be given in the following format: `-esm selected_models_name`. You can select multiple models: `-esm model_name_1 model_name_2`.
+
+Ensemble evaluation arguments
+- `-eea` use all models to create end evaluate ensemble model (default).
+- `-eem` use selected models to create end evaluate ensemble model. After the flag, the name of the model must be given in the following format: `-eem selected_models_name`. You can select multiple models: `-eem model_name_1 model_name_2`.
+- `-eesa` skip ensemble evaluation.
+- `-eesm` skip selected models. All models will be queued up to create and evaluate ensembled model, but the selected ones will get removed from the queue. After the flag, the name of the model must be given in the following format: `-eesm selected_models_name`. You can select multiple models: `-eesm model_name_1 model_name_2`.
+
+# Step 5: Run UI
+After the training you have the ability to use multiple models and the ensembled model on any data input in an interactive UI. Use the following:
+```bash
+cd work/
+python ui.py
+```
+![image](https://github.com/user-attachments/assets/ca104320-2476-4236-bd5b-8c8c704de5dd)
+By uploading tiff files in the Upload MRI slices section, and uploading the corresponding labels in the Upload Ground Truth section (optional), and by clicking on the Process button you have the ability the segmentate the uploaded files and compare the results to the ground truth. You can navigate through the slices using the slider.
+![image](https://github.com/user-attachments/assets/da63bf99-d239-4b14-ba8c-88c2f2958581)
+You can see the input slice, and all the output slices from the models
+
+It's important to know that the default models, which the UI uses are in the `preprocessed_data/model` folder. You can add trained models to this folder, and in order to use them, you must give them the correct file names. These names can be found in the Model list section.
 
 ### Model list
 Current supported model list. Use the names in the 'Model name' column as arguments.
 
-| Model | Model name | Architecture |
+| Model | Model name | Default path |
 | --- | --- | --- |
-| Baseline | `baseline` | Unet |
-| Unet | `unet` | Unet |
+| UnetR | `unetr` | `unetr.pth` |
+| Unet | `basicunet` | `basicunet.pth` |
+| Unet++ | `unetplusplus` | `unetplusplus.pth` |
+| DYNUnet | `dynunet` | `dynunet.pth` |
 
 
